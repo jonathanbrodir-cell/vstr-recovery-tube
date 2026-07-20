@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VSTR Recovery Tube</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #070b14;
+    --panel: #10182a;
+    --panel-edge: #223050;
+    --hud-dim: #5b6b85;
+    --hud-text: #9fb0c8;
+    --glow: #5eead4;
+    --glass: #7dd3fc;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--ink);
+    color: var(--hud-text);
+    font-family: "IBM Plex Mono", monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 48px;
+  }
+  header {
+    width: 100%;
+    max-width: 760px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px solid var(--panel-edge);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  header h1 {
+    font-family: "Chakra Petch", sans-serif;
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: 0.18em;
+    color: #e2e8f0;
+    text-transform: uppercase;
+  }
+  header .sub { font-size: 11px; color: var(--hud-dim); letter-spacing: 0.1em; }
+  .stage { width: 100%; max-width: 760px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .connect { text-align: center; padding: 64px 28px; }
+  .connect p { font-size: 13px; line-height: 1.8; max-width: 46ch; margin: 0 auto 28px; }
+  .btn {
+    font-family: "Chakra Petch", sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--glow);
+    border: none;
+    border-radius: 8px;
+    padding: 14px 28px;
+    cursor: pointer;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.ghost {
+    background: transparent;
+    color: var(--hud-text);
+    border: 1px solid var(--panel-edge);
+    margin-left: 12px;
+  }
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    font-size: 11px;
+    color: var(--hud-dim);
+  }
+  .toolbar button {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: var(--hud-dim);
+    background: none;
+    border: 1px solid var(--panel-edge);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .toolbar button:hover { color: var(--hud-text); border-color: var(--hud-dim); }
+  .err {
+    margin-top: 16px;
+    font-size: 12px;
+    color: #fb7185;
+    text-align: center;
+    display: none;
+  }
+  svg { width: 100%; height: auto; display: block; }
+  .figure { animation: floaty 6s ease-in-out infinite; transform-origin: 340px 230px; }
+  .bub { animation: rise linear infinite; }
+  #core { animation: corepulse 1.1s ease-in-out infinite; }
+  #scan { animation: scan 7s linear infinite; }
+  @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+  @keyframes rise { 0% { transform: translateY(0); opacity: .8; } 100% { transform: translateY(-250px); opacity: 0; } }
+  @keyframes corepulse { 0%,100% { opacity: .95; } 50% { opacity: .35; } }
+  @keyframes scan { 0% { transform: translateY(0); opacity: 0; } 8% { opacity: .25; } 92% { opacity: .25; } 100% { transform: translateY(300px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .figure, .bub, #core, #scan { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>VSTR Recovery Tube</h1>
+  <div class="sub" id="stamp">standby</div>
+</header>
+
+<div class="stage">
+  <div class="card connect" id="connectView">
+    <p>Subject chamber offline. Authorize the link to your Oura account to begin biometric visualization. Authorization happens on Oura's site; your token stays in this browser only.</p>
+    <button class="btn" id="connectBtn">Connect Oura</button>
+    <button class="btn ghost" id="demoBtn">Demo mode</button>
+    <div class="err" id="connectErr"></div>
+  </div>
+
+  <div class="card" id="tubeView" style="display:none">
+    <svg viewBox="0 0 680 470" role="img" aria-label="Recovery tube avatar reflecting current Oura biometrics">
+      <defs>
+        <linearGradient id="liq" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#134e4a" id="liqTop"/>
+          <stop offset="100%" stop-color="#042f2e" id="liqBot"/>
+        </linearGradient>
+        <clipPath id="tubeClip"><rect x="230" y="70" width="220" height="320" rx="110"/></clipPath>
+      </defs>
+
+      <rect x="205" y="380" width="270" height="46" rx="14" fill="#1c2436" stroke="#2c3852"/>
+      <rect x="220" y="392" width="240" height="8" rx="4" fill="#0d1220"/>
+      <circle cx="244" cy="413" r="4" fill="#5eead4" id="baseLamp"/>
+      <circle cx="260" cy="413" r="4" fill="#334155"/>
+      <circle cx="276" cy="413" r="4" fill="#334155"/>
+      <rect x="215" y="34" width="250" height="40" rx="12" fill="#1c2436" stroke="#2c3852"/>
+      <rect x="250" y="46" width="180" height="6" rx="3" fill="#0d1220"/>
+
+      <g clip-path="url(#tubeClip)">
+        <rect x="230" y="70" width="220" height="320" fill="url(#liq)"/>
+        <rect x="230" y="70" width="220" height="26" fill="#ffffff" opacity="0.06"/>
+        <rect x="230" y="70" width="220" height="3" fill="#e0fdfa" opacity="0.2" id="scan"/>
+        <g id="bubbles">
+          <circle class="bub" cx="270" cy="380" r="4" fill="#e0fdfa" opacity=".5"/>
+          <circle class="bub" cx="310" cy="395" r="3" fill="#e0fdfa" opacity=".5"/>
+          <circle class="bub" cx="352" cy="388" r="5" fill="#e0fdfa" opacity=".4"/>
+          <circle class="bub" cx="395" cy="392" r="3" fill="#e0fdfa" opacity=".5"/>
+          <circle class="bub" cx="420" cy="385" r="4" fill="#e0fdfa" opacity=".4"/>
+        </g>
+
+        <g class="figure">
+          <path d="M340 128 C312 122 300 150 306 186 C296 214 304 228 312 236 L322 200 L318 168 Z" fill="#1e1b3a"/>
+          <path d="M340 128 C368 122 380 150 374 186 C384 214 376 228 368 236 L358 200 L362 168 Z" fill="#1e1b3a"/>
+          <ellipse cx="340" cy="158" rx="26" ry="28" fill="#f3d9c6"/>
+          <path d="M314 150 C312 118 368 118 366 150 C366 138 358 132 340 132 C322 132 314 138 314 150 Z" fill="#2a2550"/>
+          <path d="M318 146 L326 162 L332 146 Z" fill="#2a2550"/>
+          <path d="M348 146 L354 162 L362 146 Z" fill="#2a2550"/>
+          <g id="eyesClosed">
+            <path d="M326 168 q5 4 10 0" stroke="#3f3050" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+            <path d="M346 168 q5 4 10 0" stroke="#3f3050" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          </g>
+          <g id="eyesOpen" style="display:none">
+            <ellipse cx="331" cy="167" rx="4.5" ry="5" fill="#ffffff"/>
+            <ellipse cx="349" cy="167" rx="4.5" ry="5" fill="#ffffff"/>
+            <circle cx="331" cy="168" r="2.4" fill="#31c6b2"/>
+            <circle cx="349" cy="168" r="2.4" fill="#31c6b2"/>
+          </g>
+          <rect x="322" y="186" width="36" height="16" rx="8" fill="#f3d9c6"/>
+          <path d="M312 202 C312 192 368 192 368 202 L372 290 C372 312 356 326 340 326 C324 326 308 312 308 290 Z" fill="#242c44"/>
+          <path d="M312 210 L302 268 C300 278 306 284 312 282 L318 240 Z" fill="#242c44"/>
+          <path d="M368 210 L378 268 C380 278 374 284 368 282 L362 240 Z" fill="#242c44"/>
+          <circle cx="340" cy="238" r="12" fill="#5eead4" id="core"/>
+          <circle cx="340" cy="238" r="17" fill="none" stroke="#5eead4" stroke-width="1" opacity=".5" id="coreRing"/>
+          <path d="M330 326 L328 366 C328 372 334 374 336 368 L340 336 L344 368 C346 374 352 372 352 366 L350 326 Z" fill="#242c44"/>
+        </g>
+      </g>
+
+      <rect x="230" y="70" width="220" height="320" rx="110" fill="none" stroke="#7dd3fc" stroke-width="1.5" opacity=".55" id="glass"/>
+      <rect x="248" y="88" width="10" height="120" rx="5" fill="#ffffff" opacity=".14"/>
+
+      <g font-family="IBM Plex Mono, monospace">
+        <text x="490" y="96" font-size="12" fill="#5b6b85">readiness</text>
+        <text x="490" y="120" font-size="22" fill="#5eead4" id="hudReady">--</text>
+        <rect x="490" y="130" width="150" height="5" rx="2.5" fill="#1c2436"/>
+        <rect x="490" y="130" width="0" height="5" rx="2.5" fill="#5eead4" id="barReady"/>
+        <text x="490" y="168" font-size="12" fill="#5b6b85">sleep score</text>
+        <text x="490" y="192" font-size="22" fill="#7dd3fc" id="hudSleep">--</text>
+        <rect x="490" y="202" width="150" height="5" rx="2.5" fill="#1c2436"/>
+        <rect x="490" y="202" width="0" height="5" rx="2.5" fill="#7dd3fc" id="barSleep"/>
+        <text x="490" y="240" font-size="12" fill="#5b6b85">lowest hr (sleep)</text>
+        <text x="490" y="264" font-size="22" fill="#f0abfc" id="hudHr">--</text>
+        <text x="490" y="302" font-size="12" fill="#5b6b85">stress</text>
+        <text x="490" y="326" font-size="22" fill="#fbbf24" id="hudStress">--</text>
+        <text x="490" y="364" font-size="12" fill="#5b6b85">hrv (avg)</text>
+        <text x="490" y="388" font-size="16" fill="#9fb0c8" id="hudHrv">--</text>
+        <text x="490" y="424" font-size="12" fill="#475569">status</text>
+        <text x="490" y="444" font-size="13" fill="#9fb0c8" id="hudStatus">linking...</text>
+        <text x="42" y="96" font-size="12" fill="#475569">subject</text>
+        <text x="42" y="116" font-size="14" fill="#9fb0c8">VSTR-01</text>
+        <text x="42" y="152" font-size="12" fill="#475569">data from</text>
+        <text x="42" y="172" font-size="13" fill="#9fb0c8" id="hudDate">--</text>
+      </g>
+    </svg>
+
+    <div class="toolbar">
+      <span id="modeNote">live link</span>
+      <div>
+        <button id="refreshBtn">refresh</button>
+        <button id="disconnectBtn">disconnect</button>
+      </div>
+    </div>
+    <div class="err" id="tubeErr"></div>
+  </div>
+</div>
+
+<script>
+const CONFIG = {
+  clientId: "c42e844a-d12d-4fe3-a99f-af711ef0f1c2",
+  redirectUri: "https://jonathanbrodir-cell.github.io/vstr-recovery-tube/app.html",
+  scopes: "personal daily heartrate workout tag session spo2",
+  api: "https://api.ouraring.com/v2/usercollection"
+};
+
+const $ = id => document.getElementById(id);
+const TOKEN_KEY = "vstr_oura_token";
+
+function saveToken(token, expiresIn) {
+  localStorage.setItem(TOKEN_KEY, JSON.stringify({
+    token, expires: Date.now() + (Number(expiresIn) || 86400) * 1000
+  }));
+}
+function getToken() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TOKEN_KEY));
+    if (raw && raw.token && Date.now() < raw.expires) return raw.token;
+  } catch (e) {}
+  return null;
+}
+function clearToken() { localStorage.removeItem(TOKEN_KEY); }
+
+function authorize() {
+  const url = "https://cloud.ouraring.com/oauth/authorize"
+    + "?response_type=token"
+    + "&client_id=" + encodeURIComponent(CONFIG.clientId)
+    + "&redirect_uri=" + encodeURIComponent(CONFIG.redirectUri)
+    + "&scope=" + encodeURIComponent(CONFIG.scopes)
+    + "&state=" + Math.random().toString(36).slice(2);
+  location.href = url;
+}
+
+function parseHashToken() {
+  if (!location.hash.includes("access_token")) return null;
+  const params = new URLSearchParams(location.hash.slice(1));
+  const token = params.get("access_token");
+  const expiresIn = params.get("expires_in");
+  history.replaceState(null, "", location.pathname);
+  if (token) { saveToken(token, expiresIn); return token; }
+  return null;
+}
+
+function isoDaysAgo(n) {
+  const d = new Date(Date.now() - n * 86400000);
+  return d.toISOString().slice(0, 10);
+}
+
+async function ouraGet(token, endpoint) {
+  const url = CONFIG.api + "/" + endpoint
+    + "?start_date=" + isoDaysAgo(3) + "&end_date=" + isoDaysAgo(0);
+  const res = await fetch(url, { headers: { Authorization: "Bearer " + token } });
+  if (res.status === 401) throw new Error("unauthorized");
+  if (!res.ok) throw new Error(endpoint + " failed (" + res.status + ")");
+  const json = await res.json();
+  return json.data || [];
+}
+
+function latest(arr) { return arr.length ? arr[arr.length - 1] : null; }
+
+async function fetchVitals(token) {
+  const [readiness, sleepDaily, sleepDetail, stress] = await Promise.all([
+    ouraGet(token, "daily_readiness"),
+    ouraGet(token, "daily_sleep"),
+    ouraGet(token, "sleep"),
+    ouraGet(token, "daily_stress").catch(() => [])
+  ]);
+  const r = latest(readiness), s = latest(sleepDaily), d = latest(sleepDetail), st = latest(stress);
+  let stressLevel = 30;
+  if (st) {
+    if (st.day_summary === "restored") stressLevel = 15;
+    else if (st.day_summary === "normal") stressLevel = 45;
+    else if (st.day_summary === "stressful") stressLevel = 80;
+    else if (typeof st.stress_high === "number") {
+      stressLevel = Math.min(95, Math.round(st.stress_high / 60 / 3));
+    }
+  }
+  return {
+    readiness: r ? r.score : null,
+    sleep: s ? s.score : null,
+    hr: d && d.lowest_heart_rate ? d.lowest_heart_rate : null,
+    hrv: d && d.average_hrv ? Math.round(d.average_hrv) : null,
+    stress: stressLevel,
+    stressLabel: st && st.day_summary ? st.day_summary : null,
+    day: (r && r.day) || (s && s.day) || null
+  };
+}
+
+function band(r) {
+  if (r === null) return { top:"#233247", bot:"#131c2b", glow:"#94a3b8", glass:"#64748b", label:"no data synced yet" };
+  if (r >= 80) return { top:"#134e4a", bot:"#042f2e", glow:"#5eead4", glass:"#7dd3fc", label:"regeneration nominal" };
+  if (r >= 60) return { top:"#4a3a10", bot:"#2d2206", glow:"#fbbf24", glass:"#fcd34d", label:"partial recovery" };
+  return { top:"#4c1220", bot:"#2a0810", glow:"#fb7185", glass:"#fda4af", label:"critical — rest required" };
+}
+
+function render(v) {
+  const b = band(v.readiness);
+  $("liqTop").setAttribute("stop-color", b.top);
+  $("liqBot").setAttribute("stop-color", b.bot);
+  $("core").setAttribute("fill", b.glow);
+  $("coreRing").setAttribute("stroke", b.glow);
+  $("glass").setAttribute("stroke", b.glass);
+  $("baseLamp").setAttribute("fill", b.glow);
+
+  $("hudReady").textContent = v.readiness ?? "--";
+  $("hudReady").setAttribute("fill", b.glow);
+  $("barReady").setAttribute("width", v.readiness ? Math.round(v.readiness * 1.5) : 0);
+  $("barReady").setAttribute("fill", b.glow);
+
+  $("hudSleep").textContent = v.sleep ?? "--";
+  $("barSleep").setAttribute("width", v.sleep ? Math.round(v.sleep * 1.5) : 0);
+
+  $("hudHr").textContent = v.hr ? v.hr + " bpm" : "--";
+  if (v.hr) $("core").style.animationDuration = (60 / v.hr).toFixed(2) + "s";
+
+  $("hudHrv").textContent = v.hrv ? v.hrv + " ms" : "--";
+
+  const stTxt = v.stressLabel || (v.stress < 34 ? "low" : v.stress < 67 ? "elevated" : "high");
+  $("hudStress").textContent = stTxt;
+  $("hudStress").setAttribute("fill", v.stress < 34 ? "#5eead4" : v.stress < 67 ? "#fbbf24" : "#fb7185");
+
+  $("hudStatus").textContent = b.label;
+  $("hudDate").textContent = v.day || "--";
+  $("stamp").textContent = v.day ? "cycle " + v.day : "online";
+
+  const eyesOpen = v.readiness !== null && v.readiness >= 90;
+  $("eyesOpen").style.display = eyesOpen ? "" : "none";
+  $("eyesClosed").style.display = eyesOpen ? "none" : "";
+
+  document.querySelector(".figure").style.animationDuration = (3 + (v.sleep ?? 60) / 25) + "s";
+  document.querySelectorAll(".bub").forEach((el, i) => {
+    el.style.animationDuration = (Math.max(2.5, 8 - v.stress / 18) + i * 0.7) + "s";
+    el.style.animationDelay = (i * 0.6) + "s";
+  });
+}
+
+function showTube(demo) {
+  $("connectView").style.display = "none";
+  $("tubeView").style.display = "";
+  $("modeNote").textContent = demo ? "demo mode — sample data" : "live link";
+}
+
+async function boot(token) {
+  showTube(false);
+  $("tubeErr").style.display = "none";
+  try {
+    const vitals = await fetchVitals(token);
+    render(vitals);
+  } catch (err) {
+    if (err.message === "unauthorized") {
+      clearToken();
+      $("tubeView").style.display = "none";
+      $("connectView").style.display = "";
+      const e = $("connectErr");
+      e.textContent = "Session expired. Connect again to re-link.";
+      e.style.display = "block";
+    } else {
+      const e = $("tubeErr");
+      e.textContent = "Data fetch failed: " + err.message + ". Try refresh, or check that the ring has synced.";
+      e.style.display = "block";
+      render(band(null) && { readiness:null, sleep:null, hr:null, hrv:null, stress:30, stressLabel:null, day:null });
+    }
+  }
+}
+
+$("connectBtn").addEventListener("click", authorize);
+$("demoBtn").addEventListener("click", () => {
+  showTube(true);
+  render({ readiness:82, sleep:78, hr:58, hrv:52, stress:25, stressLabel:"restored", day:isoDaysAgo(1) });
+});
+$("refreshBtn").addEventListener("click", () => {
+  const t = getToken();
+  if (t) boot(t); else location.reload();
+});
+$("disconnectBtn").addEventListener("click", () => {
+  clearToken();
+  location.reload();
+});
+
+(function init() {
+  const fresh = parseHashToken();
+  const token = fresh || getToken();
+  if (token) boot(token);
+})();
+</script>
+</body>
+</html>
